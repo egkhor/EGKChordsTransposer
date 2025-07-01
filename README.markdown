@@ -29,7 +29,7 @@ Download the **premium version** on the [Apple App Store](https://www.apple.com/
 - **Feedback**: Comment or email [admin@egkhor.com.my](mailto:admin@egkhor.com.my).
 
 ## About Us
-**EGK Microelectronic Solutions**, led by **Eng Gian Khor**, builds tools to empower musicians. Contact us at [admin@egkhor.com.my](mailto:admin@egkhor.com.my).
+**EGK Microelectronic Solutions**, solo by **Eng Gian Khor**, builds tools to empower musicians. Contact us at [admin@egkhor.com.my](mailto:admin@egkhor.com.my).
 
 ---
 
