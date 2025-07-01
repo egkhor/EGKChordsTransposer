@@ -10,7 +10,7 @@ Musicians, transpose chords effortlessly with **EGK CTransposer**, created by **
 - **User-Friendly**: Intuitive design for all levels.
 
 ## Free HTML Version
-Get the **free browser-based version** on [GitHub](https://github.com/EGKMicro/EGK-CTransposer). Clone or download the repo, open `index.html` in a browser, and start transposing—no installation needed!
+Get the **free browser-based version** on [GitHub](https://github.com/EGKMicro/EGK-CTransposer). Clone or download the repo, open `EGK CTransposer.html` in a browser, and start transposing—no installation needed!
 
 ## Premium Version on App Store
 Download the **premium version** on the [Apple App Store](https://www.apple.com/app-store/) with **music playback**. Hear chords in real-time, ideal for songwriting and teaching. Email [admin@egkhor.com.my](mailto:admin@egkhor.com.my) for details.
