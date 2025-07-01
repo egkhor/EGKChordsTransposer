@@ -24,7 +24,7 @@ Download the **premium version** on the [Apple App Store](https://www.apple.com/
 > “Saves hours! Diagrams are great for teaching.” – Sarah, Guitar Instructor
 
 ## Get Started
-- **Free Version**: Clone from [GitHub]([https://github.com/EGKMicro/EGK-CTransposer](https://github.com/egkhor/EGKChordsTransposer)).
+- **Free Version**: Clone from [GitHub](https://github.com/egkhor/EGKChordsTransposer).
 - **Premium Version**: Download from the [Apple App Store](https://www.apple.com/app-store/).
 - **Feedback**: Comment or email [admin@egkhor.com.my](mailto:admin@egkhor.com.my).
 
