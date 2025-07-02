@@ -25,7 +25,7 @@ Download the **premium version** on the [Apple App Store](https://www.apple.com/
 
 ## Get Started
 - **Free Version**: Clone from [GitHub](https://github.com/egkhor/EGKChordsTransposer).
-- **Premium Version**: Download from the [Apple App Store](https://www.apple.com/app-store/).
+- **Premium Version**: Download from the [Apple App Store]([https://www.apple.com/app-store/](https://apps.apple.com/my/app/egk-ctransposer/id6748041656)).
 - **Feedback**: Comment or email [admin@egkhor.com.my](mailto:admin@egkhor.com.my).
 
 ## About Us
