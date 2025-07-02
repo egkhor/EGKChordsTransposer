@@ -1,0 +1,373 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EGK CTransposer</title>
+    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script data-type="module" src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const ContentView = () => {
+            const [chordProgression, setChordProgression] = useState('');
+            const [chordSheet, setChordSheet] = useState('');
+            const [useChordSheetMode, setUseChordSheetMode] = useState(false);
+            const [transposition, setTransposition] = useState(0);
+            const [transposedChords, setTransposedChords] = useState('');
+            const [transposedSheet, setTransposedSheet] = useState('');
+            const [saveName, setSaveName] = useState('');
+            const [savedProgressions, setSavedProgressions] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('SavedProgressions');
+                    return saved ? JSON.parse(saved) : {};
+                } catch (e) {
+                    console.error('Failed to parse saved progressions:', e);
+                    return {};
+                }
+            });
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [audioContext, setAudioContext] = useState(null);
+
+            const transpositionOptions = Array.from({ length: 23 }, (_, i) => i - 11);
+            const chordNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+            useEffect(() => {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                setAudioContext(ctx);
+                return () => ctx.close();
+            }, []);
+
+            const transposeChords = (text, semitones) => {
+                const regex = /\b([A-G][b#]?)(m7|maj7|min7|dim|aug|sus|m)?\b/g;
+                return text.replace(regex, (match, root, suffix = '') => {
+                    const index = chordNames.indexOf(root);
+                    if (index === -1) return match;
+                    const newIndex = (index + semitones) % 12;
+                    const fixedIndex = newIndex >= 0 ? newIndex : newIndex + 12;
+                    return chordNames[fixedIndex] + suffix;
+                });
+            };
+
+            const chordToFrequency = (chord) => {
+                const root = chord.match(/^[A-G][b#]?/);
+                if (!root) return null;
+                const baseNotes = { 'C': 60, 'C#': 61, 'D': 62, 'D#': 63, 'E': 64, 'F': 65, 'F#': 66, 'G': 67, 'G#': 68, 'A': 69, 'A#': 70, 'B': 71 };
+                const midiNote = baseNotes[root[0].toUpperCase()];
+                if (!midiNote) return null;
+                return 440.0 * Math.pow(2, (midiNote - 69) / 12);
+            };
+
+            const playChords = () => {
+                if (!audioContext) return;
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        setIsPlaying(true);
+                        const chords = transposedChords.split(' ').filter(c => c);
+                        let currentTime = audioContext.currentTime;
+
+                        chords.forEach(chord => {
+                            const frequency = chordToFrequency(chord);
+                            if (frequency) {
+                                const oscillator = audioContext.createOscillator();
+                                oscillator.type = 'sine';
+                                oscillator.frequency.setValueAtTime(frequency, currentTime);
+                                oscillator.connect(audioContext.destination);
+                                oscillator.start(currentTime);
+                                oscillator.stop(currentTime + 0.5);
+                                currentTime += 0.6;
+                            }
+                        });
+
+                        setTimeout(() => setIsPlaying(false), currentTime * 1000);
+                    });
+                } else {
+                    setIsPlaying(true);
+                    const chords = transposedChords.split(' ').filter(c => c);
+                    let currentTime = audioContext.currentTime;
+
+                    chords.forEach(chord => {
+                        const frequency = chordToFrequency(chord);
+                        if (frequency) {
+                            const oscillator = audioContext.createOscillator();
+                            oscillator.type = 'sine';
+                            oscillator.frequency.setValueAtTime(frequency, currentTime);
+                            oscillator.connect(audioContext.destination);
+                            oscillator.start(currentTime);
+                            oscillator.stop(currentTime + 0.5);
+                            currentTime += 0.6;
+                        }
+                    });
+
+                    setTimeout(() => setIsPlaying(false), currentTime * 1000);
+                }
+            };
+
+            const stopPlayback = () => {
+                setIsPlaying(false);
+                if (audioContext) audioContext.suspend();
+            };
+
+            const exportToTextFile = (content, fileName) => {
+                const name = fileName.trim() || 'ChordSheet';
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${name}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            const handleSave = () => {
+                const toSave = useChordSheetMode ? chordSheet : chordProgression;
+                if (toSave && saveName) {
+                    const newProgressions = { ...savedProgressions, [saveName]: toSave };
+                    setSavedProgressions(newProgressions);
+                    localStorage.setItem('SavedProgressions', JSON.stringify(newProgressions));
+                    setSaveName('');
+                }
+            };
+
+            const ChordDiagram = ({ chord }) => {
+                const fretCount = 4;
+                const stringCount = 6;
+
+                const chordPositions = (chord) => {
+                    const root = chord.match(/^[A-G][b#]?/)?.[0];
+                    const isMinor = chord.includes('m');
+                    if (!root) return null;
+                    switch (root.toUpperCase()) {
+                        case 'C': return isMinor ? [[0,3],[2,4],[3,5]] : [[1,3],[2,0],[3,2],[4,3]];
+                        case 'G': return isMinor ? [[0,3],[1,5],[3,5]] : [[0,3],[1,0],[2,0],[3,0]];
+                        case 'A': return isMinor ? [[0,0],[1,2],[2,2],[3,2]] : [[0,0],[1,2],[2,2],[3,2],[4,0]];
+                        case 'F': return isMinor ? [[0,1],[2,3],[3,3]] : [[1,1],[2,2],[3,3],[4,1]];
+                        case 'D': return isMinor ? [[0,0],[1,0],[2,0]] : [[0,2],[2,2],[3,2]];
+                        case 'E': return isMinor ? [[0,0],[2,2],[3,2]] : [[0,0],[1,0],[2,0]];
+                        default: return null;
+                    }
+                };
+
+                return (
+                    <canvas width="200" height="150" className="border border-black mx-auto" ref={canvas => {
+                        if (!canvas) return;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) return;
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        const fretWidth = canvas.width / (fretCount + 1);
+                        const stringHeight = canvas.height / (stringCount + 1);
+
+                        for (let i = 0; i <= fretCount; i++) {
+                            ctx.beginPath();
+                            ctx.moveTo(0, i * fretWidth);
+                            ctx.lineTo(canvas.width, i * fretWidth);
+                            ctx.stroke();
+                        }
+
+                        for (let i = 0; i <= stringCount; i++) {
+                            ctx.beginPath();
+                            ctx.moveTo(i * stringHeight, 0);
+                            ctx.lineTo(i * stringHeight, canvas.height);
+                            ctx.stroke();
+                        }
+
+                        const positions = chordPositions(chord);
+                        if (positions) {
+                            ctx.fillStyle = 'red';
+                            positions.forEach(([string, fret]) => {
+                                const x = string * stringHeight;
+                                const y = fret * fretWidth;
+                                ctx.beginPath();
+                                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                                ctx.fill();
+                            });
+                        }
+                    }} />
+                );
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <div className="max-w-2xl mx-auto p-4 flex-grow">
+                        <h1 className="text-2xl font-bold text-center mb-4">EGK CTransposer</h1>
+                        <div className="space-y-4">
+                            <label className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    checked={useChordSheetMode}
+                                    onChange={() => setUseChordSheetMode(!useChordSheetMode)}
+                                    className="form-checkbox"
+                                />
+                                <span>Chord Sheet Mode</span>
+                            </label>
+
+                            {useChordSheetMode ? (
+                                <>
+                                    <textarea
+                                        value={chordSheet}
+                                        onChange={e => setChordSheet(e.target.value)}
+                                        className="w-full h-48 p-2 font-mono border rounded bg-gray-50"
+                                        placeholder="Enter chord sheet..."
+                                    />
+                                    <button
+                                        onClick={() => setTransposedSheet(transposeChords(chordSheet, transposition))}
+                                        className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                    >
+                                        Transpose Sheet
+                                    </button>
+                                    {transposedSheet && (
+                                        <>
+                                            <h2 className="text-lg font-semibold">Transposed Chord Sheet:</h2>
+                                            <textarea
+                                                value={transposedSheet}
+                                                readOnly
+                                                className="w-full h-48 p-2 font-mono border rounded bg-gray-50"
+                                            />
+                                        </>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <input
+                                        type="text"
+                                        value={chordProgression}
+                                        onChange={e => setChordProgression(e.target.value)}
+                                        placeholder="Enter chord progression (e.g., C G Am F)"
+                                        className="w-full p-2 border rounded bg-gray-50"
+                                    />
+                                    <button
+                                        onClick={() => setTransposedChords(transposeChords(chordProgression, transposition))}
+                                        className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                    >
+                                        Transpose Line
+                                    </button>
+                                    <h2 className="text-lg font-semibold">Transposed Chords:</h2>
+                                    <div className="p-2 bg-gray-50 border rounded">
+                                        {transposedChords || 'Enter chords and transpose'}
+                                    </div>
+                                    {transposedChords && (
+                                        <>
+                                            <h2 className="text-lg font-semibold">Chord Diagram (First Chord):</h2>
+                                            <ChordDiagram chord={transposedChords.split(' ')[0] || ''} />
+                                            <button
+                                                onClick={isPlaying ? stopPlayback : playChords}
+                                                className={`w-full p-2 text-white rounded ${isPlaying ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
+                                            >
+                                                {isPlaying ? 'Stop' : 'Play'}
+                                            </button>
+                                        </>
+                                    )}
+                                </>
+                            )}
+
+                            <select
+                                value={transposition}
+                                onChange={e => setTransposition(Number(e.target.value))}
+                                className="w-full p-2 border rounded bg-gray-50"
+                            >
+                                {transpositionOptions.map(interval => (
+                                    <option key={interval} value={interval}>
+                                        {interval >= 0 ? '+' : ''}{interval} semitones
+                                    </option>
+                                ))}
+                            </select>
+
+                            <input
+                                type="text"
+                                value={saveName}
+                                onChange={e => setSaveName(e.target.value)}
+                                placeholder="Save as (e.g., Song1)"
+                                className="w-full p-2 border rounded bg-gray-50"
+                            />
+                            <button
+                                onClick={handleSave}
+                                className="w-full p-2 bg-green-500 text-white rounded hover:bg-green-600"
+                            >
+                                Save
+                            </button>
+                            <button
+                                onClick={() => exportToTextFile(useChordSheetMode ? transposedSheet : transposedChords, saveName)}
+                                className="w-full p-2 bg-orange-500 text-white rounded hover:bg-orange-600"
+                            >
+                                Export TXT
+                            </button>
+
+                            <div className="h-24 overflow-y-auto border rounded bg-gray-50">
+                                {Object.entries(savedProgressions).sort().map(([name, progression]) => (
+                                    <div
+                                        key={name}
+                                        className="p-2 hover:bg-gray-200 cursor-pointer"
+                                        onClick={() => {
+                                            if (useChordSheetMode) {
+                                                setChordSheet(progression);
+                                                setTransposedSheet(transposeChords(progression, transposition));
+                                            } else {
+                                                setChordProgression(progression);
+                                                setTransposedChords(transposeChords(progression, transposition));
+                                            }
+                                        }}
+                                    >
+                                        {name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <footer className="bg-gray-800 text-white text-center p-4 mt-4">
+                        <p>&copy; EGK Microelectronic Solutions - Eng Gian Khor</p>
+                        <p>Website: <a href="http://www.egkhor.com.my" className="underline hover:text-gray-300">www.egkhor.com.my</a></p>
+                        <p>Email: <a href="mailto:admin@egkhor.com.my" className="underline hover:text-gray-300">admin@egkhor.com.my</a></p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ContentView />);
+    </script>
+</body>
+</html>
