@@ -13,7 +13,7 @@ Musicians, transpose chords effortlessly with **EGK CTransposer**, created by **
 Get the **free browser-based version** on [GitHub](https://github.com/egkhor/EGKChordsTransposer). Clone or download the repo, open `EGK CTransposer.html` in a browser, and start transposing—no installation needed!
 
 ## Premium Version on App Store
-Download the **premium version** on the [Apple App Store](https://www.apple.com/app-store/) with **music playback**. Hear chords in real-time, ideal for songwriting and teaching. Email [admin@egkhor.com.my](mailto:admin@egkhor.com.my) for details.
+Download the **premium version** on the [Apple App Store](https://apps.apple.com/my/app/egk-ctransposer/id6748041656) with **music playback**. Hear chords in real-time, ideal for songwriting and teaching. Email [admin@egkhor.com.my](mailto:admin@egkhor.com.my) for details.
 
 ## How It Works
 1. Enter chords or a sheet.
@@ -25,7 +25,7 @@ Download the **premium version** on the [Apple App Store](https://www.apple.com/
 
 ## Get Started
 - **Free Version**: Clone from [GitHub](https://github.com/egkhor/EGKChordsTransposer).
-- **Premium Version**: Download from the [Apple App Store]([https://www.apple.com/app-store/](https://apps.apple.com/my/app/egk-ctransposer/id6748041656)).
+- **Premium Version**: Download from the [Apple App Store](https://apps.apple.com/my/app/egk-ctransposer/id6748041656).
 - **Feedback**: Comment or email [admin@egkhor.com.my](mailto:admin@egkhor.com.my).
 
 ## About Us
